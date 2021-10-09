@@ -1,9 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import ManageMenu from '../views/ManageMenu.vue'
 import Home from '../views/Home.vue'
 
 const routes = [
   {
     path: '/',
+    name: 'MenageMenu',
+    component: ManageMenu
+  },
+  {
+    path: '/home',
     name: 'Home',
     component: Home
   },
