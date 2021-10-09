@@ -2,28 +2,60 @@
   <div class="main">
     <el-row class="filter-box">
       <el-col :span="2">姓名</el-col>
-      <el-col :span="2"><el-input v-model="name"></el-input></el-col>
+      <el-col :span="2"><el-input v-model="query.name"></el-input></el-col>
       <el-col :span="2">性别</el-col>
-      <el-col :span="2"><el-input></el-input></el-col>
+      <el-col :span="2">
+        <el-select v-model="query.sex" placeholder="请选择">
+          <el-option label="男" value="男"> </el-option>
+          <el-option label="女" value="女"> </el-option> </el-select
+      ></el-col>
       <el-col :span="2">部门</el-col>
-      <el-col :span="2"><el-input></el-input></el-col>
+      <el-col :span="2">
+        <el-select v-model="query.department" placeholder="请选择">
+          <el-option label="售后" value="售后"> </el-option>
+          <el-option label="经理办" value="经理办"> </el-option>
+          <el-option label="技术开发" value="博士"> </el-option> </el-select
+      ></el-col>
       <el-col :span="2">职务</el-col>
-      <el-col :span="2"><el-input></el-input></el-col>
+      <el-col :span="2">
+        <el-select v-model="query.job" placeholder="请选择">
+          <el-option label="客服" value="客服"> </el-option> </el-select
+      ></el-col>
       <el-col :span="2">是否启用</el-col>
       <el-col :span="2"><el-input></el-input></el-col>
     </el-row>
     <el-row class="filter-box">
       <el-col :span="2">教育水平</el-col>
-      <el-col :span="2"><el-input></el-input></el-col>
+      <el-col :span="2">
+        <el-select v-model="query.degree" placeholder="请选择">
+          <el-option label="本科" value="本科"> </el-option>
+          <el-option label="专科" value="专科"> </el-option>
+          <el-option label="博士" value="博士"> </el-option> </el-select
+      ></el-col>
       <el-col :span="2">入职时间</el-col>
-      <el-col :span="2"><el-input></el-input></el-col>
+      <el-col :span="2">
+        <el-date-picker
+          v-model="query.joinDate"
+          type="date"
+          placeholder="选择日期时间"
+          value-format="YYYY-MM-DD"
+        >
+        </el-date-picker>
+      </el-col>
       <el-col :span="2">离职时间</el-col>
-      <el-col :span="2"><el-input></el-input></el-col>
+      <el-col :span="2">
+        <el-date-picker
+          v-model="query.leaveDate"
+          type="date"
+          placeholder="选择日期时间"
+          value-format="YYYY-MM-DD"
+        >
+        </el-date-picker
+      ></el-col>
       <el-col :span="2">手机号</el-col>
-      <el-col :span="2"><el-input></el-input></el-col>
+      <el-col :span="2"><el-input v-model="query.phone"></el-input></el-col>
       <el-col :span="5">
         <el-button
-          v-waves
           class="filter-item"
           type="primary"
           icon="el-icon-search"
@@ -38,7 +70,9 @@
       <el-button type="primary" size="small">导出</el-button>
       <el-button type="primary" size="small">职务管理</el-button>
     </el-row>
-    <div class="table-box">
+    <el-empty v-if="tableData.length == 0" style="min-height: 500px">
+    </el-empty>
+    <div class="table-box" v-else>
       <el-table
         border
         :data="showTableData"
@@ -123,11 +157,10 @@
           </el-form-item>
           <el-form-item label="离职时间" label-width="100px">
             <el-date-picker
-              v-model="addForm.leaveData"
+              v-model="addForm.leaveDate"
               type="date"
               placeholder="选择日期时间"
-              align="right"
-              value-format="yyyy-MM-dd"
+              value-format="YYYY-MM-DD"
             >
             </el-date-picker>
           </el-form-item>
@@ -165,11 +198,10 @@
           </el-form-item>
           <el-form-item label="入职时间" label-width="100px">
             <el-date-picker
-              v-model="addForm.joinData"
+              v-model="addForm.joinDate"
               type="date"
               placeholder="选择日期时间"
-              value-format="yyyy-MM-dd"
-              class="el-date-picker-fixed"
+              value-format="YYYY-MM-DD"
             >
             </el-date-picker>
           </el-form-item>
@@ -186,7 +218,7 @@
     </el-form>
     <span class="dialog-footer">
       <el-button @click="addVisible = false">取 消</el-button>
-      <el-button type="primary" @click="saveAdd('addForm')">确 定</el-button>
+      <el-button type="primary" @click="saveAdd">确 定</el-button>
     </span></el-dialog
   >
 </template>
@@ -208,6 +240,18 @@ export default {
         }
       }
     };
+    var validateqq = (rule, value, callback) => {
+      if (!value) {
+        return callback(new Error("请填写qq号码"));
+      } else {
+        const reg = /^\d{5,10}$/;
+        if (reg.test(value)) {
+          callback();
+        } else {
+          return callback(new Error("请输入正确的qq号码"));
+        }
+      }
+    };
     var validatePassword = (rule, value, callback) => {
       if (!value) {
         return callback(new Error("请填写密码"));
@@ -223,8 +267,8 @@ export default {
 
     return {
       name: "",
-      queryCondition: {
-        name: "",
+      query: {
+        name: "王",
         sex: "",
         department: "",
         job: "",
@@ -233,6 +277,7 @@ export default {
         joinDate: "",
         leaveDate: "",
         phone: "",
+        previousTableData: "",
       },
       tableData: [],
       currentPage: 1,
@@ -247,14 +292,22 @@ export default {
       addForm: {
         // id: 0,
         name: "",
-        username: "wangfangyi",
+        username: "",
         sex: "男",
-        department: "售后",
-        job: "客服",
+        department: "",
+        job: "",
+        degree: "",
         qq: "",
         wx: "",
-        phone: "15012341234",
+        age: 18,
+        password: "",
+        joinDate: "",
+        leaveDate: "",
+        phone: "",
+        isEnable: "",
+        deleteSign: "",
       },
+      timer: undefined,
       rules: {
         name: [
           { required: true, message: "请输入姓名", trigger: "blur" },
@@ -276,7 +329,7 @@ export default {
         ],
         qq: [
           {
-            type: "number",
+            validator: validateqq,
             message: "请输入正确的qq号码",
             trigger: "blur",
           },
@@ -316,6 +369,30 @@ export default {
     handleClick() {
       console.log("click");
     },
+    handleFilter() {
+      let res = [];
+      res = JSON.parse(JSON.stringify(this.query.previousTableData));
+      let queryKeys = Object.keys(this.query);
+
+      for (let i = 0; i < queryKeys.length - 1; i++) {
+        if (this.query[queryKeys[i]]) {
+          // console.log(res);
+          /* 如果查询条件存在，按每一个条件查询过滤结果 */
+          // console.log(res);
+
+          res = res.filter((item) => {
+            if (item[queryKeys[i]]) {
+              console.log(item[queryKeys[i]], this.query[queryKeys[i]]);
+              return item[queryKeys[i]].indexOf(this.query[queryKeys[i]]) != -1;
+            }
+          });
+        }
+      }
+      console.log(res);
+      this.tableData = res;
+      this.handleCurrentChange(1);
+      // console.log(res,queryKeys,this.query);
+    },
     handleCurrentChange(val) {
       console.log(`当前页: ${val}`);
       this.currentPage = val;
@@ -335,35 +412,55 @@ export default {
     handleAdd() {
       this.addVisible = true;
     },
-    saveAdd(formName) {
-      /* 验证是否通过 */
-      this.$refs[formName].validate((valid) => {
-        console.log(this.addForm, valid);
-        if (valid) {
-          /* 验证用户名是否已存在 */
+    // debounce(fn, delay) {
+    //   var timer;
+    //   return function (...args) {
+    //     if (timer) {
+    //       clearTimeout(timer);
+    //     }
+    //     timer = setTimeout(() => {
+    //       fn.apply(this, args);
+    //     }, delay);
+    //   };
+    // },
 
-          if (this.usernameList.indexOf(this.addForm.username) != -1) {
-            this.$message.error("用户名已存在，请更换用户名");
+    saveAdd() {
+      const _this = this;
+      /* 防抖 */
+      if (this.timer) {
+        clearTimeout(this.timer);
+      }
+      this.timer = setTimeout(function () {
+        console.log("saveAdd", _this.addForm);
+        /* 验证是否通过 */
+        _this.$refs["addForm"].validate((valid) => {
+          console.log(_this.addForm, valid);
+          if (valid) {
+            /* 验证用户名是否已存在 */
+
+            if (_this.usernameList.indexOf(_this.addForm.username) != -1) {
+              _this.$message.error("用户名已存在，请更换用户名");
+            } else {
+              console.log("通过验证");
+              _this.tableData.push(_this.addForm);
+              _this.usernameList.push(_this.addForm.username);
+              _this.$message.success(`添加成功`);
+              _this.addVisible = false;
+              _this.addForm = {};
+            }
           } else {
-            console.log("通过验证");
-            this.tableData.push(this.addForm);
-            this.usernameList.push(this.addForm.username);
-            this.$message.success(`添加成功`);
+            console.error("error submit!!");
+            return false;
           }
-          // this.addVisible = false;
-          // this.addForm = {};
-        } else {
-          console.error("error submit!!");
-          return false;
-        }
-      });
-
-      // console.log(this.addForm);
-      // this.tableData.push(this.addForm);
-      // this.$message.success(`添加成功`);
-      // this.addVisible = false;
-      // this.addForm = {};
+        });
+      }, 1000);
     },
+
+    // console.log(this.addForm);
+    // this.tableData.push(this.addForm);
+    // this.$message.success(`添加成功`);
+    // this.addVisible = false;
+    // this.addForm = {};
   },
   mounted() {
     let data = [
@@ -376,6 +473,7 @@ export default {
         qq: "",
         wx: "",
         phone: "15012341234",
+        joinDate: "2021-09-01",
       },
     ];
     for (var i = 0; i < 18; i++) {
@@ -390,6 +488,8 @@ export default {
         phone: "17113368981",
       });
     }
+    this.query.previousTableData = JSON.parse(JSON.stringify(data));
+
     this.tableData = data;
     this.showTableData = this.tableData.slice(0, this.pageSize);
     for (let i = 0; i < this.tableData.length; i++) {
@@ -406,6 +506,11 @@ export default {
 .el-date-editor.el-input__inner {
   position: relative;
   right: -20px;
+  /* margin-right: 0; */
+}
+.filter-box .el-date-editor.el-input,
+.el-date-editor.el-input__inner {
+  width: 130px;
   /* margin-right: 0; */
 }
 </style>
